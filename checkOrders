@@ -1,0 +1,36 @@
+IF EXISTS (SELECT *
+FROM sys.objects
+WHERE type = 'P' AND name = 'usp_GetOrderInvoice')
+    DROP PROCEDURE usp_GetOrderInvoice;
+GO
+
+CREATE PROCEDURE usp_GetOrderInvoice
+    @OrderID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- 1. 查詢訂單主檔與會員姓名 (知道是誰、送到哪)
+    SELECT
+        O.OrderID,
+        M.Name AS MemberName,
+        O.OrderDate,
+        O.TotalAmount,
+        O.Status,
+        O.ShippingAddress
+    -- <--- 這就是你要的送貨地址
+    FROM Orders O
+        JOIN Members M ON O.MemberID = M.MemberID
+    WHERE O.OrderID = @OrderID;
+
+    -- 2. 查詢該訂單的商品明細
+    SELECT
+        P.Name AS ProductName,
+        OD.Quantity,
+        OD.UnitPrice,
+        (OD.Quantity * OD.UnitPrice) AS SubTotal
+    FROM OrderDetails OD
+        JOIN Products P ON OD.ProductID = P.ProductID
+    WHERE OD.OrderID = @OrderID;
+END;
+GO
